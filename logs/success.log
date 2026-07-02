@@ -12219,3 +12219,31 @@ Stacktrace:
 2026-07-02 21:04:45,235 INFO insta_auto_update Scraping Instagram profile mee_onkarr
 2026-07-02 21:04:46,285 WARNING insta_auto_update Instagram public JSON fetch failed for mee_onkarr: 401 Client Error: Unauthorized for url: https://www.instagram.com/api/v1/users/web_profile_info/?username=mee_onkarr
 2026-07-02 21:04:49,062 INFO insta_auto_update Scraping engagement for mee_onkarr
+2026-07-02 21:25:38,476 INFO mysql.connector package: mysql.connector.plugins
+2026-07-02 21:25:38,479 INFO mysql.connector plugin_name: mysql_native_password
+2026-07-02 21:25:38,484 INFO mysql.connector AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2026-07-02 21:25:38,500 INFO insta_auto_update update_history table is ready.
+2026-07-02 21:25:38,516 INFO insta_auto_update Starting Flask web server on http://127.0.0.1:5000
+2026-07-02 21:25:38,642 INFO werkzeug [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.50:5000
+2026-07-02 21:25:38,643 INFO werkzeug [33mPress CTRL+C to quit[0m
+2026-07-02 21:32:03,608 INFO mysql.connector package: mysql.connector.plugins
+2026-07-02 21:32:03,623 INFO mysql.connector plugin_name: mysql_native_password
+2026-07-02 21:32:03,640 INFO mysql.connector AUTHENTICATION_PLUGIN_CLASS: MySQLNativePasswordAuthPlugin
+2026-07-02 21:32:03,763 INFO insta_auto_update update_history table is ready.
+2026-07-02 21:32:03,792 INFO insta_auto_update Starting Flask web server on http://127.0.0.1:5000
+2026-07-02 21:32:04,050 INFO werkzeug [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.50:5000
+2026-07-02 21:32:04,058 INFO werkzeug [33mPress CTRL+C to quit[0m
+2026-07-02 21:32:20,669 INFO werkzeug 192.168.1.50 - - [02/Jul/2026 21:32:20] "GET / HTTP/1.1" 200 -
+2026-07-02 21:32:21,986 INFO werkzeug 192.168.1.50 - - [02/Jul/2026 21:32:21] "GET /static/js/script.js HTTP/1.1" 200 -
+2026-07-02 21:32:21,996 INFO werkzeug 192.168.1.50 - - [02/Jul/2026 21:32:21] "GET /static/js/jquery.min.js HTTP/1.1" 200 -
+2026-07-02 21:32:22,112 INFO werkzeug 192.168.1.50 - - [02/Jul/2026 21:32:22] "GET /static/css/style.css HTTP/1.1" 200 -
+2026-07-02 21:32:22,813 INFO werkzeug 192.168.1.50 - - [02/Jul/2026 21:32:22] "GET /status HTTP/1.1" 200 -
+2026-07-02 21:32:22,818 INFO werkzeug 192.168.1.50 - - [02/Jul/2026 21:32:22] "GET /logs HTTP/1.1" 200 -
+2026-07-02 21:32:23,179 INFO werkzeug 192.168.1.50 - - [02/Jul/2026 21:32:23] "GET /status HTTP/1.1" 200 -
+2026-07-02 21:32:25,729 INFO werkzeug 192.168.1.50 - - [02/Jul/2026 21:32:25] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
