@@ -1,0 +1,266 @@
+import os
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, WebDriverException
+from config.config_loader import Config
+from utils.logger import logger
+from typing import Dict, Optional
+
+class SocialCatScraper:
+    def __init__(self, headless: bool = True) -> None:
+        self.headless = headless
+        self.driver = self._build_driver()
+
+    def _build_driver(self) -> webdriver.Chrome:
+        options = Options()
+        if self.headless:
+            options.add_argument('--headless=new')
+        options.add_argument('--disable-gpu')
+        options.add_argument('--no-sandbox')
+        options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--lang=en-US')
+        options.add_argument('--log-level=3')
+        try:
+            options.set_capability('pageLoadStrategy', 'eager')
+        except Exception:
+            pass
+        try:
+            driver = webdriver.Chrome(options=options)
+            driver.set_page_load_timeout(45)
+            try:
+                driver.execute_cdp_cmd('Network.enable', {})
+                driver.execute_cdp_cmd('Network.setBlockedURLs', {'urls': ['*.png', '*.jpg', '*.jpeg', '*.gif', '*.css', '*.woff', '*.woff2', '*.ttf', '*.svg', '*.mp4']})
+            except Exception:
+                logger.debug('CDP resource blocking unavailable for SocialCat')
+            return driver
+        except WebDriverException:
+            driver_path = self._resolve_chromedriver_path()
+            service = Service(driver_path)
+            driver = webdriver.Chrome(service=service, options=options)
+            driver.set_page_load_timeout(45)
+            try:
+                driver.execute_cdp_cmd('Network.enable', {})
+                driver.execute_cdp_cmd('Network.setBlockedURLs', {'urls': ['*.png', '*.jpg', '*.jpeg', '*.gif', '*.css', '*.woff', '*.woff2', '*.ttf', '*.svg', '*.mp4']})
+            except Exception:
+                logger.debug('CDP resource blocking unavailable for SocialCat')
+            return driver
+
+    def _resolve_chromedriver_path(self) -> str:
+        env_path = os.getenv('CHROME_DRIVER_PATH')
+        if env_path and os.path.isfile(env_path):
+            return env_path
+        default_dir = os.path.expanduser('~/.wdm/drivers/chromedriver')
+        if os.path.isdir(default_dir):
+            for root, _, files in os.walk(default_dir):
+                for filename in files:
+                    if filename.lower().startswith('chromedriver') and filename.lower().endswith('.exe'):
+                        return os.path.join(root, filename)
+        raise WebDriverException('Unable to resolve chromedriver executable path for SocialCat')
+
+    def scrape_engagement(self, username: str) -> Dict[str, Optional[any]]:
+        logger.info('Scraping engagement for %s', username)
+        try:
+            self.driver.get(Config.SOCIALCAT_URL)
+            WebDriverWait(self.driver, 20).until(
+                EC.presence_of_element_located((By.TAG_NAME, 'body'))
+            )
+            search_box = self._find_username_input()
+            if not search_box:
+                raise ValueError('Unable to locate SocialCat username input')
+            search_box.clear()
+            search_box.send_keys(username)
+            search_box.send_keys(Keys.ENTER)
+            WebDriverWait(self.driver, 25).until(
+                lambda d: bool(d.find_elements(By.CSS_SELECTOR, '.engagement-rate')) or bool(d.find_elements(By.XPATH, "//*[contains(text(),'Engagement Rate') or contains(text(),'engagement rate') or contains(text(),'Engagement Rate')]") )
+            )
+            # Prefer extracting from the 'Key Performance Metrics' or 'Engagement Rate' section
+            engagement_rate = None
+            try:
+                # try to locate the Key Performance Metrics section first
+                kp_elements = self.driver.find_elements(By.XPATH, "//*[contains(translate(., 'KEY PERFORMANCE METRICS', 'key performance metrics'), 'key performance metrics')]")
+                section_text = None
+                if kp_elements:
+                    section_text = kp_elements[0].text
+                if not section_text:
+                    # fallback: find any element that mentions 'Engagement Rate'
+                    ers = self.driver.find_elements(By.XPATH, "//*[contains(translate(., 'ENGAGEMENT RATE', 'engagement rate'), 'engagement rate')]")
+                    if ers:
+                        section_text = ers[0].text
+                if section_text:
+                    import re
+                    m = re.search(r'([0-9]+(?:\.[0-9]+)?)\s*%', section_text)
+                    if m:
+                        # ensure we did not capture '100% Free' by checking nearby words
+                        seg = section_text.lower()
+                        if 'free' in seg and '100%' in seg:
+                            # ignore this likely unrelated match
+                            engagement_rate = None
+                        else:
+                            engagement_rate = m.group(1)
+            except Exception:
+                engagement_rate = None
+            if not engagement_rate:
+                body_text = self.driver.find_element(By.TAG_NAME, 'body').text
+                engagement_rate = self._extract_metric([
+                    r'Engagement Rate\s*[:\-]?\s*([0-9]+(?:\.[0-9]+)?)\s*%',
+                    r'Engagement rate\s*[:\-]?\s*([0-9]+(?:\.[0-9]+)?)\s*%',
+                ], body_text)
+            if not engagement_rate:
+                try:
+                    val = self._find_number_near_keyword('engagement', window=120)
+                    if val and val != '100':
+                        engagement_rate = val
+                except Exception:
+                    engagement_rate = None
+            average_likes = None
+            average_comments = None
+            body_text = self.driver.find_element(By.TAG_NAME, 'body').text
+            try:
+                if section_text:
+                    import re
+                    m_l = re.search(r'Avg\s+Likes\s*[:\-]?\s*([0-9.,kKmM]+)', section_text, re.IGNORECASE)
+                    if m_l:
+                        average_likes = m_l.group(1)
+                    m_c = re.search(r'Avg\s+Comments\s*[:\-]?\s*([0-9.,kKmM]+)', section_text, re.IGNORECASE)
+                    if m_c:
+                        average_comments = m_c.group(1)
+            except Exception:
+                pass
+            if not average_likes:
+                average_likes = self._extract_metric([
+                    r'Avg\s+Likes\s*[:\-]?\s*([0-9.,kKmM]+)',
+                    r'Average\s+likes?\s*[:\-]?\s*([0-9.,kKmM]+)',
+                ], body_text)
+            if not average_comments:
+                average_comments = self._extract_metric([
+                    r'Avg\s+Comments\s*[:\-]?\s*([0-9.,kKmM]+)',
+                    r'Average\s+comments?\s*[:\-]?\s*([0-9.,kKmM]+)',
+                ], body_text)
+            return {
+                'engagement_rate': self._parse_percentage(engagement_rate),
+                'average_likes': self._parse_int(average_likes),
+                'average_comments': self._parse_int(average_comments),
+            }
+        except Exception as error:
+            logger.error('Engagement calculation failed for %s: %s', username, error)
+            return {
+                'engagement_rate': None,
+                'average_likes': None,
+                'average_comments': None,
+            }
+        finally:
+            # if extraction looks empty, save a debug snapshot for inspection
+            try:
+                if (engagement_rate is None or self._parse_percentage(engagement_rate) is None) and not average_likes and not average_comments:
+                    try:
+                        debug_dir = os.path.join(os.getcwd(), 'debug')
+                        os.makedirs(debug_dir, exist_ok=True)
+                        path = os.path.join(debug_dir, f'socialcat_{username}.html')
+                        with open(path, 'w', encoding='utf-8') as f:
+                            f.write(self.driver.page_source)
+                        logger.debug('Saved SocialCat debug page to %s', path)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+
+    def _find_username_input(self):
+        selectors = [
+            'input[placeholder*="Instagram username"]',
+            'input[placeholder*="username"]',
+            'input[type="text"]',
+        ]
+        for selector in selectors:
+            try:
+                element = self.driver.find_element(By.CSS_SELECTOR, selector)
+                if element.is_displayed():
+                    return element
+            except Exception:
+                continue
+        return None
+
+    def _extract_text(self, selector: str) -> Optional[str]:
+        try:
+            element = self.driver.find_element(By.CSS_SELECTOR, selector)
+            return element.text.strip()
+        except Exception:
+            return None
+
+    def _extract_metric(self, patterns: list, body_text: Optional[str] = None) -> Optional[str]:
+        import re
+        try:
+            if body_text is None:
+                body_text = self.driver.find_element(By.TAG_NAME, 'body').text
+            for pattern in patterns:
+                match = re.search(pattern, body_text, re.IGNORECASE)
+                if match:
+                    return match.group(1)
+        except Exception:
+            pass
+        return None
+
+    def _extract_value_by_regex(self, pattern: str, body_text: Optional[str] = None) -> Optional[str]:
+        import re
+        try:
+            if body_text is None:
+                body_text = self.driver.find_element(By.TAG_NAME, 'body').text
+            match = re.search(pattern, body_text, re.IGNORECASE)
+            if match:
+                return match.group(1)
+        except Exception:
+            pass
+        return None
+
+    def _parse_percentage(self, value: Optional[str]) -> Optional[float]:
+        if not value:
+            return None
+        value = value.replace('%', '').strip()
+        try:
+            return float(value)
+        except ValueError:
+            return None
+
+    def _parse_int(self, value: Optional[str]) -> Optional[int]:
+        if not value:
+            return None
+        s = str(value).strip().lower()
+        # handle k/m
+        try:
+            if s.endswith('k'):
+                return int(float(s[:-1].replace(',', '')) * 1000)
+            if s.endswith('m'):
+                return int(float(s[:-1].replace(',', '')) * 1000000)
+        except Exception:
+            pass
+        digits = ''.join(ch for ch in s if ch.isdigit())
+        return int(digits) if digits else None
+
+    def _find_number_near_keyword(self, keyword: str, window: int = 80) -> Optional[str]:
+        """Search the page body for a number occurring within `window` characters of keyword."""
+        import re
+        try:
+            body_text = self.driver.find_element(By.TAG_NAME, 'body').text
+            # find all occurrences of keyword and look for nearest number
+            positions = [m.start() for m in re.finditer(re.escape(keyword), body_text, re.IGNORECASE)]
+            if not positions:
+                return None
+            for pos in positions:
+                start = max(0, pos - window)
+                end = pos + window
+                segment = body_text[start:end]
+                m = re.search(r'([0-9][0-9,\.]*\s*[kKmM]?)', segment)
+                if m:
+                    return m.group(1)
+        except Exception:
+            pass
+        return None
+
+    def close(self) -> None:
+        if self.driver:
+            self.driver.quit()
+            logger.info('SocialCat scraper driver closed.')

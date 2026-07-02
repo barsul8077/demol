@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | InstaUpdater{% endblock %}
+
+{% block header_icon_full %}<i class="fa-solid fa-gauge-high"></i>{% endblock %}
+{% block header_title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Alert box -->
+<div class="alert-box" id="alert-box"></div>
+
+<!-- ── ROW 1: Stat Cards ── -->
+<div class="stat-cards">
+
+  <div class="stat-card">
+    <div class="card-icon indigo"><i class="fa-solid fa-users"></i></div>
+    <div>
+      <div class="card-label">Total Profiles</div>
+      <div class="card-value" id="stat-total">—</div>
+      <div class="card-sub">In database</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="card-icon blue"><i class="fa-solid fa-rotate"></i></div>
+    <div>
+      <div class="card-label">Processed</div>
+      <div class="card-value" id="stat-processed">—</div>
+      <div class="card-sub">This run</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="card-icon green"><i class="fa-solid fa-circle-check"></i></div>
+    <div>
+      <div class="card-label">Success</div>
+      <div class="card-value" id="stat-success">—</div>
+      <div class="card-sub" id="stat-success-pct">0.0%</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="card-icon red"><i class="fa-solid fa-circle-xmark"></i></div>
+    <div>
+      <div class="card-label">Failed</div>
+      <div class="card-value" id="stat-failed">—</div>
+      <div class="card-sub" id="stat-failed-pct">0.0%</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="card-icon orange"><i class="fa-solid fa-hourglass-half"></i></div>
+    <div>
+      <div class="card-label">Remaining</div>
+      <div class="card-value" id="stat-remaining">—</div>
+      <div class="card-sub">Profiles left</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── ROW 2: Control + Last Run ── -->
+<div class="two-col">
+
+  <!-- Control Panel -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title"><i class="fa-solid fa-bolt"></i> Update Control</span>
+      <span id="stat-status">
+        <span class="status-badge idle"><span class="dot"></span>Idle</span>
+      </span>
+    </div>
+    <div class="panel-body">
+
+      <div class="current-profile-card">
+        <div class="cp-label"><i class="fa-brands fa-instagram"></i> Currently Processing</div>
+        <div class="cp-name" id="stat-current">—</div>
+        <div class="cp-sub">Live update feed</div>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress-labels">
+          <span>Progress</span>
+          <span id="progress-label">0.0%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill"
+               role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px">
+        <button class="btn-start" id="btn-start-update" type="button">
+          <span class="btn-spinner"></span>
+          <i class="fa-solid fa-play btn-icon"></i>
+          Start Update
+        </button>
+        <button class="btn-stop-action" id="btn-stop-update" type="button" disabled>
+          <i class="fa-solid fa-circle-stop"></i>
+          Stop Update
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Last Run -->
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title"><i class="fa-solid fa-clock-rotate-left"></i> Last Run</span>
+    </div>
+    <div class="panel-body">
+      {% if last_run %}
+      <table class="meta-table">
+        <tr>
+          <td><i class="fa-regular fa-calendar"></i> Start Time</td>
+          <td>{{ last_run.start_time.strftime('%Y-%m-%d %H:%M:%S') if last_run.start_time else 'N/A' }}</td>
+        </tr>
+        <tr>
+          <td><i class="fa-regular fa-calendar-check"></i> End Time</td>
+          <td>{{ last_run.end_time.strftime('%Y-%m-%d %H:%M:%S') if last_run.end_time else 'N/A' }}</td>
+        </tr>
+        <tr>
+          <td><i class="fa-solid fa-flag"></i> Status</td>
+          <td>
+            {% if last_run.status == 'completed' %}
+              <span class="status-badge completed"><span class="dot"></span>Completed</span>
+            {% elif last_run.status == 'running' %}
+              <span class="status-badge running"><span class="dot"></span>Running</span>
+            {% else %}
+              <span class="status-badge failed"><span class="dot"></span>{{ last_run.status|capitalize }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <td><i class="fa-solid fa-database"></i> Updated Records</td>
+          <td>{{ last_run.updated_records }}</td>
+        </tr>
+        <tr>
+          <td><i class="fa-regular fa-clock"></i> Execution Time</td>
+          <td>{{ last_run.execution_time or 'N/A' }}</td>
+        </tr>
+        <tr>
+          <td><i class="fa-solid fa-file-lines"></i> Log File</td>
+          <td>
+            {% if last_run.log_file %}
+              <button class="btn-log-view" onclick="openLogModal('{{ last_run.log_file }}')">
+                <i class="fa-solid fa-eye"></i> View Log
+              </button>
+            {% else %}N/A{% endif %}
+          </td>
+        </tr>
+      </table>
+      {% else %}
+      <div style="color:var(--muted);font-size:.85rem;text-align:center;padding:30px 0">
+        <i class="fa-solid fa-circle-info" style="font-size:2rem;display:block;margin-bottom:10px"></i>
+        No runs yet. Click <strong>Start Update</strong> to begin.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+<!-- ── ROW 3: Live Console ── -->
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title"><i class="fa-solid fa-terminal"></i> Live Console</span>
+    <button class="btn-log-view" id="btn-clear-console">
+      <i class="fa-solid fa-eraser"></i> Clear
+    </button>
+  </div>
+  <div class="panel-body" style="padding:0">
+    <div class="log-console" id="log-console">
+      <div class="log-line info">Ready. Click "Start Update" to begin.</div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

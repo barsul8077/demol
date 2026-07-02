@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}History | InstaUpdater{% endblock %}
+{% block header_icon_full %}<i class="fa-solid fa-clock-rotate-left"></i>{% endblock %}
+{% block header_title %}Execution History{% endblock %}
+
+{% block content %}
+
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">
+      <i class="fa-solid fa-table-list"></i> All Update Runs
+    </span>
+    <span style="font-size:.75rem;color:var(--muted)">
+      {{ records|length }} record(s)
+    </span>
+  </div>
+  <div class="panel-body" style="padding:0; overflow-x:auto">
+    {% if records %}
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Start Time</th>
+          <th>End Time</th>
+          <th>Status</th>
+          <th>Updated</th>
+          <th>Duration</th>
+          <th>Log</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in records %}
+        <tr>
+          <td style="color:var(--muted);font-weight:600">{{ row.id }}</td>
+          <td>{{ row.start_time.strftime('%Y-%m-%d %H:%M:%S') if row.start_time else '—' }}</td>
+          <td>{{ row.end_time.strftime('%H:%M:%S') if row.end_time else '—' }}</td>
+          <td>
+            {% if row.status == 'completed' %}
+              <span class="status-badge completed"><span class="dot"></span>Completed</span>
+            {% elif row.status == 'running' %}
+              <span class="status-badge running"><span class="dot"></span>Running</span>
+            {% else %}
+              <span class="status-badge failed"><span class="dot"></span>{{ row.status|capitalize }}</span>
+            {% endif %}
+          </td>
+          <td><strong>{{ row.updated_records }}</strong></td>
+          <td>{{ row.execution_time or '—' }}</td>
+          <td>
+            {% if row.log_file %}
+              <button class="btn-log-view" onclick="openLogModal('{{ row.log_file }}')">
+                <i class="fa-solid fa-eye"></i> View
+              </button>
+            {% else %}
+              <span style="color:var(--muted)">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div style="color:var(--muted);text-align:center;padding:48px 0;font-size:.85rem">
+      <i class="fa-solid fa-folder-open" style="font-size:2.5rem;display:block;margin-bottom:12px"></i>
+      No history yet. Run the updater from the
+      <a href="{{ url_for('index') }}" style="color:var(--primary-light)">Dashboard</a>.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

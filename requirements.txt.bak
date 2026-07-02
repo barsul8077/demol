@@ -1,0 +1,10 @@
+python-dotenv
+selenium
+playwright
+mysql-connector-python
+apscheduler
+beautifulsoup4
+requests
+pandas
+Pillow
+webdriver-manager

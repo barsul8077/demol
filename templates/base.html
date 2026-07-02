@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Instagram Updater Dashboard{% endblock %}</title>
+  <meta name="description" content="Professional admin dashboard for Instagram influencer data updates." />
+
+  <!-- Font Awesome 6 (CDN — no integrity attr to avoid CORS block) -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
+        crossorigin="anonymous" />
+
+  <!-- Dashboard Stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+
+<div class="app-wrapper">
+
+  <!-- ===== Sidebar ===== -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon"><i class="fa-brands fa-instagram"></i></div>
+      <div>
+        <div class="brand-name">InstaUpdater</div>
+        <div class="brand-ver">v1.0 &bull; sanelemonsdb</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section">Main</div>
+      <a href="{{ url_for('index') }}"
+         class="nav-item {% if request.endpoint == 'index' %}active{% endif %}">
+        <i class="fa-solid fa-gauge-high"></i> Dashboard
+      </a>
+      <a href="{{ url_for('history') }}"
+         class="nav-item {% if request.endpoint == 'history' %}active{% endif %}">
+        <i class="fa-solid fa-clock-rotate-left"></i> History
+      </a>
+
+      <div class="nav-section" style="margin-top:14px">System</div>
+      <div class="nav-item nav-info">
+        <i class="fa-solid fa-database"></i> sanelemonsdb
+      </div>
+      <div class="nav-item nav-info">
+        <i class="fa-brands fa-python"></i> Python 3 &middot; Flask
+      </div>
+    </nav>
+
+    <div class="sidebar-foot">
+      &copy; 2026 InstaUpdater
+    </div>
+  </aside>
+
+  <!-- ===== Main Content ===== -->
+  <div class="main-content">
+
+    <header class="top-header">
+      <div class="page-title">
+        {% block header_icon_full %}<i class="fa-solid fa-gauge-high"></i>{% endblock %}
+        {% block header_title %}Dashboard{% endblock %}
+      </div>
+      <div>
+        <span id="status-badge">
+          <span class="status-badge idle"><span class="dot"></span>Idle</span>
+        </span>
+      </div>
+    </header>
+
+    <main class="page-body">
+      {% block content %}{% endblock %}
+    </main>
+
+  </div>
+</div>
+
+<!-- Log File Modal -->
+<div class="modal-overlay" id="log-modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span class="modal-title" id="log-modal-title">Log File</span>
+      <button class="modal-close" id="log-modal-close" title="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <pre class="modal-log" id="log-modal-content">Loading...</pre>
+    </div>
+  </div>
+</div>
+
+<!-- jQuery (local copy — no CDN dependency) -->
+<script src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
+
+<!-- Dashboard script -->
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>
