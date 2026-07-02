@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
     gnupg \
     curl \
     unzip \
-    libgconf-2-4 \
+     \
     libnss3 \
     libxss1 \
     libasound2 \
