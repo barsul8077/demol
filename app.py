@@ -8,7 +8,7 @@ Run with: python app.py
 import os
 import threading
 from datetime import datetime
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, session, redirect, url_for
 
 from config.config_loader import Config
 from utils.logger import configure_logging, logger
@@ -39,6 +39,35 @@ def create_app() -> Flask:
     # -----------------------------------------------------------------------
     # Routes
     # -----------------------------------------------------------------------
+
+    # -----------------------------------------------------------------------
+    # Authentication & Guards
+    # -----------------------------------------------------------------------
+    @app.before_request
+    def check_auth():
+        # Exclude login and static files from authentication check
+        if request.endpoint in ["login", "static"] or not request.endpoint:
+            return
+        if not session.get("logged_in"):
+            return redirect(url_for("login"))
+
+    @app.route("/login", methods=["GET", "POST"])
+    def login():
+        error = None
+        if request.method == "POST":
+            email = request.form.get("email")
+            password = request.form.get("password")
+            if email == "janus@gmail.com" and password == "Login@901":
+                session["logged_in"] = True
+                return redirect(url_for("index"))
+            else:
+                error = "Invalid email or password. Please try again."
+        return render_template("login.html", error=error)
+
+    @app.route("/logout", methods=["GET"])
+    def logout():
+        session.pop("logged_in", None)
+        return redirect(url_for("login"))
 
     @app.route("/", methods=["GET"])
     def index():
